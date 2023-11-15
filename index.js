@@ -25,7 +25,7 @@ async function connectToWhatsApp() {
     sock = makeWASocket({
         printQRInTerminal: true,
         auth: state,
-        browser: Browsers.ubuntu('Testing'),
+        browser: ["Baileys NodeJS"],
     });
 
     sock.ev.on('connection.update', async (update) => {
