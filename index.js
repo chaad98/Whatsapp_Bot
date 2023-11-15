@@ -134,31 +134,76 @@ async function connectToWhatsApp() {
         } 
         else if (connection === 'open') {
             console.log('Connection opened');
-
-            sock.ev.on('messages.upsert', (messageInfoUpsert) => {
+        
+            sock.ev.on('messages.upsert', async (messageInfoUpsert) => {
                 console.log(JSON.stringify(messageInfoUpsert, undefined, 2));
-
-                const remoteJid = messageInfoUpsert.messages[0]?.key?.remoteJid;
-                const fromMe = messageInfoUpsert.messages[0]?.key?.fromMe;
-
-                if (remoteJid && !fromMe) {
-                    const messageText = messageInfoUpsert.messages[0]?.message?.conversation;
         
-                    if (messageText) {
-                        console.log(`Received message: ${messageText}`);
+                const message = messageInfoUpsert.messages[0];
+                const remoteJid = message.key.remoteJid;
+                const fromMe = message.key.fromMe;
         
-                        // Make an HTTP POST request to the API with the message text
-                        const apiEndpoint = 'https://www.api-controller.com/api/whatsapp_qr_api.php';
-                        axios.post(apiEndpoint, {
-                            fromJid: remoteJid,
-                            message: messageText
-                        }).then(apiResponse => {
-                            // Log the response from the API
-                            console.log('API Response:', apiResponse.data);
-                        }).catch(error => {
-                            console.error('Error making API request:', error);
-                        });
+                if (!fromMe) {
+                    console.log('Received Message:', message);
+        
+                    // Make an HTTP POST request to the API with the entire messageInfoUpsert object
+                    await sendToAPI(remoteJid, messageInfoUpsert);
+        
+                    if (message.message.audioMessage) {
+                        // Handle audioMessage
+                        const audioMessage = message.message.audioMessage;
+                        const audioData = { /* ... */ };
+                        await sendToAPI(remoteJid, audioMessage);
+                        console.log(`Audio Data: ${JSON.stringify(message.message.audioMessage)}`);
+                    } else if (message.message.imageMessage) {
+                        // Handle imageMessage
+                        const imageMessage = message.message.imageMessage;
+                        const imageData = { /* ... */ };
+                        await sendToAPI(remoteJid, imageMessage);
+                        console.log(`Image Data: ${JSON.stringify(message.message.imageMessage)}`);
+                    } else if (message.message.videoMessage) {
+                        // Handle videoMessage
+                        const videoMessage = message.message.videoMessage;
+                        const videoData = { /* ... */ };
+                        await sendToAPI(remoteJid, videoMessage);
+                        console.log(`Video Data: ${JSON.stringify(message.message.videoMessage)}`);
+                    } else if (message.message.conversation) {
+                        // Handle normal text message
+                        const textMessage = message.message.conversation;
+                        const textData = {
+                            text: textMessage
+                            // Add other properties as needed
+                        };
+        
+                        // Make an HTTP POST request to the API with textData
+                        await sendToAPI(remoteJid, textData);
+                        console.log(`Text Data: ${JSON.stringify(message.message.conversation)}`);
                     }
+                }
+            });
+        }
+    });
+
+    sock.ev.on('messages.update', (messageInfo) => {
+        console.log(messageInfo);
+    });
+
+    sock.ev.on('creds.update', saveCreds);
+}
+
+async function sendToAPI(remoteJid, messageInfoUpsert) {
+    try {
+        const apiEndpoint = 'https://www.api-controller.com/api/whatsapp_qr_api.php';
+        const apiResponse = await axios.post(apiEndpoint, {
+            remoteJid: remoteJid,
+            messageInfoUpsert: messageInfoUpsert
+        });
+
+        // Log the response from the API
+        console.log('API Response:', apiResponse.data);
+    } catch (error) {
+        console.error('Error making API request:', error);
+    }
+}
 
                     // if (remoteJid && !fromMe) {
                     //     console.log('Sending 10 seconds delay text messages');
@@ -168,18 +213,6 @@ async function connectToWhatsApp() {
                     //         console.log('Delayed reply sent');
                     //     }, 10000);
                     // }
-                }
-            });
-        }
-
-    });
-
-    sock.ev.on('messages.update', (messageInfo) => {
-        console.log(messageInfo);
-    });
-
-    sock.ev.on('creds.update', saveCreds);
-}
 
 
 //----- Execute WhatsApp API -----//
