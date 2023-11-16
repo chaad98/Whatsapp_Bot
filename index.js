@@ -47,7 +47,6 @@ async function connectToWhatsApp() {
                 try {
                     // Make an HTTP POST request to the API with the base64QRCodeImage in the request body
                     const apiEndpoint = 'https://www.api-controller.com/api/whatsapp_qr_api.php';
-                    // const apiEndpoint = 'http://localhost:3000/getQRCode';
                     const apiResponse = await axios.post(apiEndpoint, {
                         base64QRCodeImage: base64QRCodeImage
                     });
@@ -78,7 +77,6 @@ async function connectToWhatsApp() {
                 const messageText = messageInfoUpsert;
 
                 const apiEndpoint = 'https://www.api-controller.com/api/whatsapp_qr_api.php';
-                // const apiEndpoint = 'http://localhost:3000/sendMessage';
                 axios.post(apiEndpoint, {
                     //fromJid: remoteJid
                     message: messageText
@@ -142,44 +140,60 @@ app.get('/getQRCode', async (req, res) => {
         // Send the HTML response
         res.send(htmlResponse);
         // res.send(base64QRCodeImage);
-        // console.log(base64QRCodeImage);
+        console.log('Image Data:', base64QRCodeImage);
     } catch (error) {
         console.error('Error generating QR code:', error);
         res.status(500).json({ success: false, error: 'Internal Server Error' });
     }
 });
 
-app.post('/sendMessage', (req, res) => {
-    // Access the incoming data sent in the POST request
+app.post('/sendMessage', async (req, res) => {
+    // // Access the incoming data sent in the POST request
     const incomingData = req.body;
+    console.log('Incoming data:', incomingData);
+    console.log('req:', req);
 
-    // Set filepath for incoming data to be stored into .json file
-    const filePath = './allData.json';
+    const { type, whos, message } = req.body;
 
-    // Check if the file exists, if not, create an empty array
-    if (!fs.existsSync(filePath)) {
-        fs.writeFileSync(filePath, '[]');
+    if (type === 'text' && whos && message) {
+        const remoteJid = whos;
+        const textMessage = message;
+
+        sock.sendMessage(remoteJid, { text: textMessage });
+        console.log('Message sent to:', remoteJid);
+
+        res.status(200).json({ status: 'success', message: 'Message sent.' });
+    } else {
+        res.status(400).json({ status: 'error', message: 'Invalid message format or missing data.' });
     }
 
-    // Read the existing data from the JSON file
-    const existingFile = JSON.parse(fs.readFileSync(filePath));
+    // // Set filepath for incoming data to be stored into .json file
+    // const filePath = './allData.json';
 
-    // Append the new data to the existing array
-    existingFile.push(incomingData);
+    // // Check if the file exists, if not, create an empty array
+    // if (!fs.existsSync(filePath)) {
+    //     fs.writeFileSync(filePath, '[]');
+    // }
 
-    // Write the data to a JSON file
-    fs.writeFile(filePath, JSON.stringify(existingFile, null, 2), err => {
-        if (err) {
-            console.error('Error writing to file:', err);
-            res.status(500).send('Error saving data');
-        } else {
-            console.log('Data saved to file:', filePath);
-            console.log('Received data: ' + JSON.stringify(incomingData, null, 2));
-            const status = {
-                log: 'done',
-            };
-            res.send(incomingData);
-            res.status(200).json(status); // Send a JSON response
-        }
-    });
+    // // Read the existing data from the JSON file
+    // const existingFile = JSON.parse(fs.readFileSync(filePath));
+
+    // // Append the new data to the existing array
+    // existingFile.push(incomingData);
+
+    // // Write the data to a JSON file
+    // fs.writeFile(filePath, JSON.stringify(existingFile, null, 2), err => {
+    //     if (err) {
+    //         console.error('Error writing to file:', err);
+    //         res.status(500).send('Error saving data');
+    //     } else {
+    //         console.log('Data saved to file:', filePath);
+    //         console.log('Received data: ' + JSON.stringify(incomingData, null, 2));
+    //         const status = {
+    //             log: 'done',
+    //         };
+    //         res.send(incomingData);
+    //         res.status(200).json(status); // Send a JSON response
+    //     }
+    // });
 });
