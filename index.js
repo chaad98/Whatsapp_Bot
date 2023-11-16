@@ -6,6 +6,7 @@ const makeWASocket = require('@whiskeysockets/baileys').default;
 const { Browsers } = require('@whiskeysockets/baileys');
 const qrCode = require('qrcode'); // Import qrcode library
 const axios = require('axios');
+const fs = require('fs');
 
 
 //----- Setting up Express -----//
@@ -74,12 +75,20 @@ async function connectToWhatsApp() {
                 const messageText = messageInfoUpsert;
 
                 const apiEndpoint = 'https://www.api-controller.com/api/whatsapp_qr_api.php';
+                // const apiEndpoint = 'http://localhost:3000/getMessage';
                 axios.post(apiEndpoint, {
                     //fromJid: remoteJid
                     message: messageText
                 }).then(apiResponse => {
                     console.log('API Response:', apiResponse.data);
                     console.log('Data: ', messageText);
+
+                    if (apiResponse.status == 200){
+                        console.log('Success send to API', apiResponse.data.log);
+                    }
+                    else {
+                        console.log('Fail send to the API', apiResponse.data.log);
+                    }
                 }).catch(error => {
                     console.error('Error making API request:', error);
                 });
@@ -103,4 +112,39 @@ connectToWhatsApp();
 const PORT = 3000;
 app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
+});
+
+//----- API Routes -----//
+app.post('/getMessage', (req, res) => {
+    // Access the incoming data sent in the POST request
+    const incomingData = req.body;
+
+    // Set filepath for incoming data to be stored into .json file
+    const filePath = './allData.json';
+
+    // Check if the file exists, if not, create an empty array
+    if (!fs.existsSync(filePath)) {
+        fs.writeFileSync(filePath, '[]');
+    }
+
+    // Read the existing data from the JSON file
+    const existingFile = JSON.parse(fs.readFileSync(filePath));
+
+    // Append the new data to the existing array
+    existingFile.push(incomingData);
+
+    // Write the data to a JSON file
+    fs.writeFile(filePath, JSON.stringify(existingFile, null, 2), err => {
+        if (err) {
+            console.error('Error writing to file:', err);
+            res.status(500).send('Error saving data');
+        } else {
+            console.log('Data saved to file:', filePath);
+            console.log('Received data: ' + JSON.stringify(incomingData, null, 2));
+            const status = {
+                log: 'done',
+            };
+            res.status(200).json(status); // Send a JSON response
+        }
+    });
 });
