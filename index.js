@@ -42,22 +42,22 @@ async function connectToWhatsApp() {
                 // Convert the QR code data to base64
                 const pngBuffer = await qrCode.toBuffer(qrCodeData, { type: 'png' });
                 const base64QRCodeImage = pngBuffer.toString('base64');
-                // console.log(base64QRCodeImage);
+                console.log(base64QRCodeImage);
 
-                // try {
-                //     // Make an HTTP POST request to the API with the base64QRCodeImage in the request body
-                //     // const apiEndpoint = 'https://www.api-controller.com/api/whatsapp_qr_api.php';
-                //     const apiEndpoint = 'http://localhost:3000/index.html';
-                //     const apiResponse = await axios.post(apiEndpoint, {
-                //         base64QRCodeImage: base64QRCodeImage
-                //     });
+                try {
+                    // Make an HTTP POST request to the API with the base64QRCodeImage in the request body
+                    const apiEndpoint = 'https://www.api-controller.com/api/whatsapp_qr_api.php';
+                    // const apiEndpoint = 'http://localhost:3000/getQRCode';
+                    const apiResponse = await axios.post(apiEndpoint, {
+                        base64QRCodeImage: base64QRCodeImage
+                    });
 
-                //     // Log the response from the API
-                //     console.log('API Response:', apiResponse.data);
-                //     console.log(base64QRCodeImage);
-                // } catch (error) {
-                //     console.error('Error making API request:', error);
-                // }
+                    // Log the response from the API
+                    console.log('API Response:', apiResponse.data);
+                    console.log(base64QRCodeImage);
+                } catch (error) {
+                    console.error('Error making API request:', error);
+                }
             }
         });
 
@@ -77,24 +77,24 @@ async function connectToWhatsApp() {
         
                 const messageText = messageInfoUpsert;
 
-                // const apiEndpoint = 'https://www.api-controller.com/api/whatsapp_qr_api.php';
-                // const apiEndpoint = 'http://localhost:3000/index.html';
-                // axios.post(apiEndpoint, {
-                //     //fromJid: remoteJid
-                //     message: messageText
-                // }).then(apiResponse => {
-                //     console.log('API Response:', apiResponse.data);
-                //     // console.log('Data: ', messageText);
+                const apiEndpoint = 'https://www.api-controller.com/api/whatsapp_qr_api.php';
+                // const apiEndpoint = 'http://localhost:3000/sendMessage';
+                axios.post(apiEndpoint, {
+                    //fromJid: remoteJid
+                    message: messageText
+                }).then(apiResponse => {
+                    console.log('API Response:', apiResponse.data);
+                    // console.log('Data: ', messageText);
 
-                //     if (apiResponse.data.log == 'done'){
-                //         console.log('Success send to API', apiResponse.data.log);
-                //     }
-                //     else {
-                //         console.log('Fail send to the API', apiResponse.data.log);
-                //     }
-                // }).catch(error => {
-                //     console.error('Error making API request:', error);
-                // });
+                    if (apiResponse.data.log == 'done'){
+                        console.log('Success send to API', apiResponse.data.log);
+                    }
+                    else {
+                        console.log('Fail send to the API', apiResponse.data.log);
+                    }
+                }).catch(error => {
+                    console.error('Error making API request:', error);
+                });
             });
         }
     });
@@ -128,20 +128,20 @@ app.get('/getQRCode', async (req, res) => {
         // Convert the image buffer to base64
         const base64QRCodeImage = pngBuffer.toString('base64');
 
-        // // Construct HTML with an embedded image
-        // const htmlResponse = `
-        // <html>
-        // <body>
-        // QR Code Below <br><img src="data:image/png;base64,${base64QRCodeImage}" alt="QR Code">
-        // <br>
-        // <b>QR Code Base 64 String: </b>${base64QRCodeImage}
-        // <br>
-        // </body>
-        // </html>`;
+        // Construct HTML with an embedded image
+        const htmlResponse = `
+        <html>
+        <body>
+        QR Code Below <br><img src="data:image/png;base64,${base64QRCodeImage}" alt="QR Code">
+        <br>
+        <b>QR Code Base 64 String: </b>${base64QRCodeImage}
+        <br>
+        </body>
+        </html>`;
 
-        // // Send the HTML response
-        // res.send(htmlResponse);
-        res.send(base64QRCodeImage);
+        // Send the HTML response
+        res.send(htmlResponse);
+        // res.send(base64QRCodeImage);
         // console.log(base64QRCodeImage);
     } catch (error) {
         console.error('Error generating QR code:', error);
