@@ -7,6 +7,7 @@ const { Browsers } = require('@whiskeysockets/baileys');
 const qrCode = require('qrcode'); // Import qrcode library
 const axios = require('axios');
 const fs = require('fs');
+const path = require('path');
 
 
 //----- Setting up Express -----//
@@ -26,7 +27,7 @@ async function connectToWhatsApp() {
     sock = makeWASocket({
         printQRInTerminal: true,
         auth: state,
-        browser: ["Baileys NodeJS"],
+        browser: ["Testing"],
     });
 
     sock.ev.on('connection.update', async (update) => {
@@ -41,20 +42,22 @@ async function connectToWhatsApp() {
                 // Convert the QR code data to base64
                 const pngBuffer = await qrCode.toBuffer(qrCodeData, { type: 'png' });
                 const base64QRCodeImage = pngBuffer.toString('base64');
+                // console.log(base64QRCodeImage);
 
-                try {
-                    // Make an HTTP POST request to the API with the base64QRCodeImage in the request body
-                    const apiEndpoint = 'https://www.api-controller.com/api/whatsapp_qr_api.php';
-                    const apiResponse = await axios.post(apiEndpoint, {
-                        base64QRCodeImage: base64QRCodeImage
-                    });
+                // try {
+                //     // Make an HTTP POST request to the API with the base64QRCodeImage in the request body
+                //     // const apiEndpoint = 'https://www.api-controller.com/api/whatsapp_qr_api.php';
+                //     const apiEndpoint = 'http://localhost:3000/index.html';
+                //     const apiResponse = await axios.post(apiEndpoint, {
+                //         base64QRCodeImage: base64QRCodeImage
+                //     });
 
-                    // Log the response from the API
-                    console.log('API Response:', apiResponse.data);
-                    console.log(base64QRCodeImage);
-                } catch (error) {
-                    console.error('Error making API request:', error);
-                }
+                //     // Log the response from the API
+                //     console.log('API Response:', apiResponse.data);
+                //     console.log(base64QRCodeImage);
+                // } catch (error) {
+                //     console.error('Error making API request:', error);
+                // }
             }
         });
 
@@ -74,24 +77,24 @@ async function connectToWhatsApp() {
         
                 const messageText = messageInfoUpsert;
 
-                const apiEndpoint = 'https://www.api-controller.com/api/whatsapp_qr_api.php';
-                // const apiEndpoint = 'http://localhost:3000/getMessage';
-                axios.post(apiEndpoint, {
-                    //fromJid: remoteJid
-                    message: messageText
-                }).then(apiResponse => {
-                    console.log('API Response:', apiResponse.data);
-                    console.log('Data: ', messageText);
+                // const apiEndpoint = 'https://www.api-controller.com/api/whatsapp_qr_api.php';
+                // const apiEndpoint = 'http://localhost:3000/index.html';
+                // axios.post(apiEndpoint, {
+                //     //fromJid: remoteJid
+                //     message: messageText
+                // }).then(apiResponse => {
+                //     console.log('API Response:', apiResponse.data);
+                //     // console.log('Data: ', messageText);
 
-                    if (apiResponse.status == 200){
-                        console.log('Success send to API', apiResponse.data.log);
-                    }
-                    else {
-                        console.log('Fail send to the API', apiResponse.data.log);
-                    }
-                }).catch(error => {
-                    console.error('Error making API request:', error);
-                });
+                //     if (apiResponse.data.log == 'done'){
+                //         console.log('Success send to API', apiResponse.data.log);
+                //     }
+                //     else {
+                //         console.log('Fail send to the API', apiResponse.data.log);
+                //     }
+                // }).catch(error => {
+                //     console.error('Error making API request:', error);
+                // });
             });
         }
     });
@@ -107,6 +110,8 @@ async function connectToWhatsApp() {
 //----- Execute WhatsApp API -----//
 connectToWhatsApp();
 
+// Serve static files (including index.html)
+app.use(express.static(path.join(__dirname, 'public')));
 
 //----- Server Start -----//
 const PORT = 3000;
@@ -115,7 +120,36 @@ app.listen(PORT, () => {
 });
 
 //----- API Routes -----//
-app.post('/getMessage', (req, res) => {
+app.get('/getQRCode', async (req, res) => {
+    try {
+        // Generate QR code image
+        const pngBuffer = await qrCode.toBuffer(qrCodeData, { type: 'png' });
+
+        // Convert the image buffer to base64
+        const base64QRCodeImage = pngBuffer.toString('base64');
+
+        // // Construct HTML with an embedded image
+        // const htmlResponse = `
+        // <html>
+        // <body>
+        // QR Code Below <br><img src="data:image/png;base64,${base64QRCodeImage}" alt="QR Code">
+        // <br>
+        // <b>QR Code Base 64 String: </b>${base64QRCodeImage}
+        // <br>
+        // </body>
+        // </html>`;
+
+        // // Send the HTML response
+        // res.send(htmlResponse);
+        res.send(base64QRCodeImage);
+        // console.log(base64QRCodeImage);
+    } catch (error) {
+        console.error('Error generating QR code:', error);
+        res.status(500).json({ success: false, error: 'Internal Server Error' });
+    }
+});
+
+app.post('/sendMessage', (req, res) => {
     // Access the incoming data sent in the POST request
     const incomingData = req.body;
 
@@ -144,6 +178,7 @@ app.post('/getMessage', (req, res) => {
             const status = {
                 log: 'done',
             };
+            res.send(incomingData);
             res.status(200).json(status); // Send a JSON response
         }
     });
