@@ -8,6 +8,7 @@ const qrCode = require('qrcode'); // Import qrcode library
 const axios = require('axios');
 const fs = require('fs');
 const path = require('path');
+const { MessageType, MessageOptions, Mimetype } = require('@whiskeysockets/baileys');
 
 
 //----- Setting up Express -----//
@@ -18,6 +19,123 @@ app.use(bodyParser.json());
 //----- Global Variables -----//
 let qrCodeData = '';
 let sock;
+
+//----- Functions -----//
+async function sendQRCodeImage(whos, qrData) {
+    try {
+        const pngBuffer = await qrCode.toBuffer(qrData, { type: 'png', });
+        const base64QRCodeImage = pngBuffer.toString('base64');
+
+        await sock.sendMessage(whos, { image: {url: `data:image/png;base64,${base64QRCodeImage}` }, });
+
+        console.log('QR Code sent to:', whos);
+        return { success: true, message: 'QR Code sent.' };
+    } catch (error) {
+        console.error('Error generating or sending QR code:', error);
+        return { success: false, message: 'Error generating or sending QR code.'};
+    }
+}
+
+async function sendMessageWithType(type, whos, message) {
+    const remoteJid = whos;
+
+    switch(type) {
+        case 'text':
+            if(message) {
+                await sock.sendMessage(remoteJid, { text: message });
+                console.log('Text message sent to:', remoteJid);
+            }
+            break;
+
+        case 'image':
+            if(message && message.imageUrl) {
+                const imageUrl = message.imageUrl;
+                const caption = message.caption || '';
+
+                await sock.sendMessage(remoteJid, { image: {url: imageUrl}, caption: caption, });
+                console.log('Image message sent to:', remoteJid);
+            }
+            break;
+        
+        case 'video':
+            if(message && message.videoUrl) {
+                const videoUrl = message.videoUrl;
+                const caption = message.caption || '';
+
+                await sock.sendMessage(remoteJid, { video: {url: videoUrl}, caption: caption, });
+                console.log('Video message sent to:', remoteJid);
+            }
+            break;
+        
+        case 'audio':
+            if(message && message.audioUrl) {
+                const audioUrl = message.audioUrl;
+
+                await sock.sendMessage(remoteJid, { audio: {url: audioUrl}, mimetype: 'audio/mp4', });
+                console.log('Audio message sent to:', remoteJid);
+            }
+            break;
+        
+        case 'location':
+            if(message && message.latitude && message.longitude) {
+                const latitude = message.latitude;
+                const longitude = message.longitude;
+
+                await sock.sendMessage(remoteJid, { location: {degreesLatitude: latitude, degreesLongitude: longitude}, });
+                console.log('Location message sent to:', remoteJid);
+            }
+            break;
+
+        case 'link':
+            if(message && message.link) {
+                const link = message.link;
+
+                await sock.sendMessage(remoteJid, { text: `Hi, this was sent using ${link}`, });
+                console.log('Link preview sent to:', remoteJid);
+            }
+            break;
+
+        case 'sticker':
+            if(message && message.stickerUrl) {
+                const stickerUrl = message.stickerUrl;
+
+                await sock.sendMessage(remoteJid, { sticker: {url: stickerUrl, }, });
+                console.log('Sticker sent to:', remoteJid);
+            }
+            break;
+
+        case 'document':
+            if (message && message.filePath && message.fileName && message.mimetype) {
+                const documentFilePath = message.filePath;
+                const fileOfName = message.fileName;
+                const type = message.mimetype;
+                console.log('Type MIMETYPE:',type);
+                console.log('This file name', fileOfName);
+        
+                await sock.sendMessage(remoteJid, {
+                    document: { url: documentFilePath, filename: fileOfName, mimeType: type },
+                });
+                console.log('Document sent to:', remoteJid);
+            }
+            break;
+            
+
+        case 'contact':
+            if(message && message.displayName && message.phoneNumber) {
+                const displayName = message.displayName;
+                const phoneNumber = message.phoneNumber;
+                const vcard = `BEGIN:VCARD\nVERSION:3.0\nFN:${displayName}\nTEL:${phoneNumber}\nEND:VCARD`;
+
+                await sock.sendMessage(remoteJid, { contacts: {displayName: displayName, contacts: [{vcard}] }, });
+                console.log('Contact sent to:', remoteJid);
+            }
+            break;
+
+        default:
+            console.error('Invalid message type');
+            throw new Error('Invalid message type');
+    }
+}
 
 
 //----- WhatsApp API Setup -----//
@@ -42,7 +160,6 @@ async function connectToWhatsApp() {
                 // Convert the QR code data to base64
                 const pngBuffer = await qrCode.toBuffer(qrCodeData, { type: 'png' });
                 const base64QRCodeImage = pngBuffer.toString('base64');
-                console.log(base64QRCodeImage);
 
                 try {
                     // Make an HTTP POST request to the API with the base64QRCodeImage in the request body
@@ -53,7 +170,7 @@ async function connectToWhatsApp() {
 
                     // Log the response from the API
                     console.log('API Response:', apiResponse.data);
-                    console.log(base64QRCodeImage);
+                    console.log('QR Code Base64 String:',base64QRCodeImage);
                 } catch (error) {
                     console.error('Error making API request:', error);
                 }
@@ -66,6 +183,15 @@ async function connectToWhatsApp() {
 
             if (shouldReconnect) {
                 connectToWhatsApp();
+            }
+            else {
+                try {
+                    fs.rmdirSync('auth_info_baileys', { recursive: true });
+                    connectToWhatsApp();
+                    console.log('Authentication info folder deleted.');
+                } catch (error) {
+                    console.error('Error deleted authentication folder:', error);
+                }
             }
         } 
         else if (connection === 'open') {
@@ -104,12 +230,8 @@ async function connectToWhatsApp() {
     sock.ev.on('creds.update', saveCreds);
 }
 
-
 //----- Execute WhatsApp API -----//
 connectToWhatsApp();
-
-// Serve static files (including index.html)
-app.use(express.static(path.join(__dirname, 'public')));
 
 //----- Server Start -----//
 const PORT = 3000;
@@ -130,10 +252,7 @@ app.get('/getQRCode', async (req, res) => {
         const htmlResponse = `
         <html>
         <body>
-        QR Code Below <br><img src="data:image/png;base64,${base64QRCodeImage}" alt="QR Code">
-        <br>
-        <b>QR Code Base 64 String: </b>${base64QRCodeImage}
-        <br>
+        <img src="data:image/png;base64,${base64QRCodeImage}" alt="QR Code">
         </body>
         </html>`;
 
@@ -148,52 +267,12 @@ app.get('/getQRCode', async (req, res) => {
 });
 
 app.post('/sendMessage', async (req, res) => {
-    // // Access the incoming data sent in the POST request
-    const incomingData = req.body;
-    console.log('Incoming data:', incomingData);
-    console.log('req:', req);
-
     const { type, whos, message } = req.body;
 
-    if (type === 'text' && whos && message) {
-        const remoteJid = whos;
-        const textMessage = message;
-
-        sock.sendMessage(remoteJid, { text: textMessage });
-        console.log('Message sent to:', remoteJid);
-
+    try {
+        await sendMessageWithType(type, whos, message);
         res.status(200).json({ status: 'success', message: 'Message sent.' });
-    } else {
-        res.status(400).json({ status: 'error', message: 'Invalid message format or missing data.' });
+    } catch (error) {
+        res.status(400).json({ status: 'error', message: error.message });
     }
-
-    // // Set filepath for incoming data to be stored into .json file
-    // const filePath = './allData.json';
-
-    // // Check if the file exists, if not, create an empty array
-    // if (!fs.existsSync(filePath)) {
-    //     fs.writeFileSync(filePath, '[]');
-    // }
-
-    // // Read the existing data from the JSON file
-    // const existingFile = JSON.parse(fs.readFileSync(filePath));
-
-    // // Append the new data to the existing array
-    // existingFile.push(incomingData);
-
-    // // Write the data to a JSON file
-    // fs.writeFile(filePath, JSON.stringify(existingFile, null, 2), err => {
-    //     if (err) {
-    //         console.error('Error writing to file:', err);
-    //         res.status(500).send('Error saving data');
-    //     } else {
-    //         console.log('Data saved to file:', filePath);
-    //         console.log('Received data: ' + JSON.stringify(incomingData, null, 2));
-    //         const status = {
-    //             log: 'done',
-    //         };
-    //         res.send(incomingData);
-    //         res.status(200).json(status); // Send a JSON response
-    //     }
-    // });
 });
