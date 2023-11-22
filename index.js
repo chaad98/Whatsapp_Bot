@@ -8,8 +8,7 @@ const qrCode = require('qrcode'); // Import qrcode library
 const axios = require('axios');
 const fs = require('fs');
 const path = require('path');
-const { MessageType, MessageOptions, Mimetype } = require('@whiskeysockets/baileys');
-
+const { Mimetype } = require('@whiskeysockets/baileys');
 
 //----- Setting up Express -----//
 const app = express();
@@ -105,15 +104,150 @@ async function sendMessageWithType(type, whos, message) {
             break;
 
         case 'document':
-            if (message && message.filePath && message.fileName && message.mimetype) {
+            if (message && message.filePath && message.fileName && message.filecaption && message.mimetype) {
                 const documentFilePath = message.filePath;
                 const fileOfName = message.fileName;
-                const type = message.mimetype;
-                console.log('Type MIMETYPE:',type);
-                console.log('This file name', fileOfName);
+                const fileCaption = message.filecaption;
+                const mimeType = message.mimetype;
+                // console.log('This file name', fileOfName);
+
+                let info = {};
+        
+                switch (mimeType) {
+                    case 'word':
+                        info = {
+                            filePath: documentFilePath,
+                            fileName: fileOfName,
+                            caption: fileCaption,
+                            mimetype: 'application/msword',
+                        };
+                        break;
+
+                    case 'word365':
+                        info = {
+                            filePath: documentFilePath,
+                            fileName: fileOfName,
+                            caption: fileCaption,
+                            mimetype: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+                        };
+                        break;
+
+                    case 'pdf':
+                        info = {
+                            filePath: documentFilePath,
+                            fileName: fileOfName,
+                            caption: fileCaption,
+                            mimetype: 'application/pdf',
+                        };
+                        break;
+
+                    case 'excel':
+                        info = {
+                            filePath: documentFilePath,
+                            fileName: fileOfName,
+                            caption: fileCaption,
+                            mimetype: 'application/vnd.ms-excel',
+                        };
+                        break;
+
+                    case 'excel365':
+                        info = {
+                            filePath: documentFilePath,
+                            fileName: fileOfName,
+                            caption: fileCaption,
+                            mimetype: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                        };
+                        break;
+
+                    case 'powerpoint':
+                        info = {
+                            filePath: documentFilePath,
+                            fileName: fileOfName,
+                            caption: fileCaption,
+                            mimetype: 'application/vnd.ms-powerpoint',
+                        };
+                        break;
+
+                    case 'powerpoint365':
+                        info = {
+                            filePath: documentFilePath,
+                            fileName: fileOfName,
+                            caption: fileCaption,
+                            mimetype: 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+                        };
+                        break;
+
+                    case 'txt':
+                        info = {
+                            filePath: documentFilePath,
+                            fileName: fileOfName,
+                            caption: fileCaption,
+                            mimetype: 'text/plain',
+                        };
+                        break;
+
+                    case 'rtf':
+                        info = {
+                            filePath: documentFilePath,
+                            fileName: fileOfName,
+                            caption: fileCaption,
+                            mimetype: 'application/rtf',
+                        };
+                        break;
+
+                    case 'zip':
+                        info = {
+                            filePath: documentFilePath,
+                            fileName: fileOfName,
+                            caption: fileCaption,
+                            mimetype: 'application/zip',
+                        };
+                        break;
+
+                    case 'rar':
+                        info = {
+                            filePath: documentFilePath,
+                            fileName: fileOfName,
+                            caption: fileCaption,
+                            mimetype: 'application/vnd.rar',
+                        };
+                        break;
+
+                    case 'jpg':
+                        info = {
+                            filePath: documentFilePath,
+                            fileName: fileOfName,
+                            caption: fileCaption,
+                            mimetype: 'image/jpeg',
+                        };
+                        break;
+
+                    case 'png':
+                        info = {
+                            filePath: documentFilePath,
+                            fileName: fileOfName,
+                            caption: fileCaption,
+                            mimetype: 'image/png',
+                        };
+                        break;
+
+                    case 'gif':
+                        info = {
+                            filePath: documentFilePath,
+                            fileName: fileOfName,
+                            caption: fileCaption,
+                            mimetype: 'image/gif',
+                        };
+                        break;
+
+                    default:
+                        console.error('Unsupported document type');
+                        break;
+                }
         
                 await sock.sendMessage(remoteJid, {
-                    document: { url: documentFilePath, filename: fileOfName, mimeType: type },
+                    document: { url: documentFilePath, filename: fileOfName, filecaption: fileCaption, mimeType: mimeType },
+                    ...info
                 });
                 console.log('Document sent to:', remoteJid);
             }
@@ -124,7 +258,8 @@ async function sendMessageWithType(type, whos, message) {
             if(message && message.displayName && message.phoneNumber) {
                 const displayName = message.displayName;
                 const phoneNumber = message.phoneNumber;
-                const vcard = `BEGIN:VCARD\nVERSION:3.0\nFN:${displayName}\nTEL:${phoneNumber}\nEND:VCARD`;
+                const vcard = `BEGIN:VCARD\n` + `VERSION:3.0\n` + `FN:${displayName}\n` 
+                                + `TEL;type=CELL;type=VOICE;waid=${phoneNumber}:+${phoneNumber}\n` + `END:VCARD`;
 
                 await sock.sendMessage(remoteJid, { contacts: {displayName: displayName, contacts: [{vcard}] }, });
                 console.log('Contact sent to:', remoteJid);
