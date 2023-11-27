@@ -36,13 +36,13 @@ async function sendQRCodeImage(whos, qrData) {
 }
 
 async function sendMessageWithType(type, whos, message) {
-    const remoteJid = whos;
+    // const remoteJid = whos;
 
     switch(type) {
         case 'text':
             if(message) {
-                await sock.sendMessage(remoteJid, { text: message });
-                console.log('Text message sent to:', remoteJid);
+                await sock.sendMessage(whos, { text: message });
+                console.log('Text message sent to:', whos);
             }
             break;
 
@@ -51,8 +51,8 @@ async function sendMessageWithType(type, whos, message) {
                 const imageUrl = message.imageUrl;
                 const caption = message.caption || '';
 
-                await sock.sendMessage(remoteJid, { image: {url: imageUrl}, caption: caption, });
-                console.log('Image message sent to:', remoteJid);
+                await sock.sendMessage(whos, { image: {url: imageUrl}, caption: caption, });
+                console.log('Image message sent to:', whos);
             }
             break;
         
@@ -61,8 +61,8 @@ async function sendMessageWithType(type, whos, message) {
                 const videoUrl = message.videoUrl;
                 const caption = message.caption || '';
 
-                await sock.sendMessage(remoteJid, { video: {url: videoUrl}, caption: caption, });
-                console.log('Video message sent to:', remoteJid);
+                await sock.sendMessage(whos, { video: {url: videoUrl}, caption: caption, });
+                console.log('Video message sent to:', whos);
             }
             break;
         
@@ -70,8 +70,8 @@ async function sendMessageWithType(type, whos, message) {
             if(message && message.audioUrl) {
                 const audioUrl = message.audioUrl;
 
-                await sock.sendMessage(remoteJid, { audio: {url: audioUrl}, mimetype: 'audio/mp4', });
-                console.log('Audio message sent to:', remoteJid);
+                await sock.sendMessage(whos, { audio: {url: audioUrl}, mimetype: 'audio/mp4', });
+                console.log('Audio message sent to:', whos);
             }
             break;
         
@@ -80,8 +80,8 @@ async function sendMessageWithType(type, whos, message) {
                 const latitude = message.latitude;
                 const longitude = message.longitude;
 
-                await sock.sendMessage(remoteJid, { location: {degreesLatitude: latitude, degreesLongitude: longitude}, });
-                console.log('Location message sent to:', remoteJid);
+                await sock.sendMessage(whos, { location: {degreesLatitude: latitude, degreesLongitude: longitude}, });
+                console.log('Location message sent to:', whos);
             }
             break;
 
@@ -89,8 +89,8 @@ async function sendMessageWithType(type, whos, message) {
             if(message && message.link) {
                 const link = message.link;
 
-                await sock.sendMessage(remoteJid, { text: `Hi, this was sent using ${link}`, });
-                console.log('Link preview sent to:', remoteJid);
+                await sock.sendMessage(whos, { text: `Hi, this was sent using ${link}`, });
+                console.log('Link preview sent to:', whos);
             }
             break;
 
@@ -98,8 +98,8 @@ async function sendMessageWithType(type, whos, message) {
             if(message && message.stickerUrl) {
                 const stickerUrl = message.stickerUrl;
 
-                await sock.sendMessage(remoteJid, { sticker: {url: stickerUrl, }, });
-                console.log('Sticker sent to:', remoteJid);
+                await sock.sendMessage(whos, { sticker: {url: stickerUrl, }, });
+                console.log('Sticker sent to:', whos);
             }
             break;
 
@@ -245,11 +245,11 @@ async function sendMessageWithType(type, whos, message) {
                         break;
                 }
         
-                await sock.sendMessage(remoteJid, {
+                await sock.sendMessage(whos, {
                     document: { url: documentFilePath, filename: fileOfName, filecaption: fileCaption, mimeType: mimeType },
                     ...info
                 });
-                console.log('Document sent to:', remoteJid);
+                console.log('Document sent to:', whos);
             }
             break;
             
@@ -261,8 +261,8 @@ async function sendMessageWithType(type, whos, message) {
                 const vcard = `BEGIN:VCARD\n` + `VERSION:3.0\n` + `FN:${displayName}\n` 
                                 + `TEL;type=CELL;type=VOICE;waid=${phoneNumber}:+${phoneNumber}\n` + `END:VCARD`;
 
-                await sock.sendMessage(remoteJid, { contacts: {displayName: displayName, contacts: [{vcard}] }, });
-                console.log('Contact sent to:', remoteJid);
+                await sock.sendMessage(whos, { contacts: {displayName: displayName, contacts: [{vcard}] }, });
+                console.log('Contact sent to:', whos);
             }
             break;
 
@@ -369,7 +369,7 @@ async function connectToWhatsApp() {
 connectToWhatsApp();
 
 //----- Server Start -----//
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
 });
