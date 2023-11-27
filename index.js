@@ -3,12 +3,9 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const { DisconnectReason, useMultiFileAuthState } = require('@whiskeysockets/baileys');
 const makeWASocket = require('@whiskeysockets/baileys').default;
-const { Browsers } = require('@whiskeysockets/baileys');
 const qrCode = require('qrcode'); // Import qrcode library
 const axios = require('axios');
 const fs = require('fs');
-const path = require('path');
-const { Mimetype } = require('@whiskeysockets/baileys');
 
 //----- Setting up Express -----//
 const app = express();
@@ -85,14 +82,14 @@ async function sendMessageWithType(type, whos, message) {
             }
             break;
 
-        case 'link':
-            if(message && message.link) {
-                const link = message.link;
+        // case 'link':
+        //     if(message && message.link) {
+        //         const link = message.link;
 
-                await sock.sendMessage(whos, { text: `Hi, this was sent using ${link}`, });
-                console.log('Link preview sent to:', whos);
-            }
-            break;
+        //         await sock.sendMessage(whos, { text: `Hi, this was sent using ${link}`, });
+        //         console.log('Link preview sent to:', whos);
+        //     }
+        //     break;
 
         case 'sticker':
             if(message && message.stickerUrl) {
