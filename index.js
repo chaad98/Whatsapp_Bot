@@ -6,6 +6,7 @@ const makeWASocket = require('@whiskeysockets/baileys').default;
 const qrCode = require('qrcode'); // Import qrcode library
 const axios = require('axios');
 const fs = require('fs');
+const crypto = require('crypto');
 
 //----- Setting up Express -----//
 const app = express();
@@ -15,21 +16,26 @@ app.use(bodyParser.json());
 //----- Global Variables -----//
 let qrCodeData = '';
 let sock;
+let ip_info = [];
+
+//----- Execute WhatsApp API -----//
+connectToWhatsApp();
+
+//----- Server Start -----//
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+    console.log(`Server is running on port ${PORT}`);
+});
 
 //----- Functions -----//
-async function sendQRCodeImage(whos, qrData) {
-    try {
-        const pngBuffer = await qrCode.toBuffer(qrData, { type: 'png', });
-        const base64QRCodeImage = pngBuffer.toString('base64');
+function generateRandomToken(length) {
+    return crypto.randomBytes(length).toString('hex');
+}
 
-        await sock.sendMessage(whos, { image: {url: `data:image/png;base64,${base64QRCodeImage}` }, });
-
-        console.log('QR Code sent to:', whos);
-        return { success: true, message: 'QR Code sent.' };
-    } catch (error) {
-        console.error('Error generating or sending QR code:', error);
-        return { success: false, message: 'Error generating or sending QR code.'};
-    }
+async function sendQRCodeImage() {
+    const pngBuffer = await qrCode.toBuffer(qrCodeData, { type: 'png' });
+    const base64QRCodeImage = pngBuffer.toString('base64');
+    return base64QRCodeImage;
 }
 
 async function sendMessageWithType(type, whos, message) {
@@ -362,36 +368,41 @@ async function connectToWhatsApp() {
     sock.ev.on('creds.update', saveCreds);
 }
 
-//----- Execute WhatsApp API -----//
-connectToWhatsApp();
+//----- API Routes -----//
+app.get('/checkIP', (req, res) => {
+    const clientIP = req.ip;
+    console.log('Client IP:', clientIP);
 
-//----- Server Start -----//
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-    console.log(`Server is running on port ${PORT}`);
+    try {
+        if(ip_info.includes(clientIP)) {
+            console.log('Matching IP Address found in ip_info array!');
+            res.status(200).json({ success: true, message: 'IP Found success!' });
+        } else {
+            console.log('No matching IP Address found in ip_info array!');
+            res.status(403).json({ success: false, message: 'Invalid IP Address!' });
+        }
+    } catch (error) {
+        console.error('Server error:', error);
+        res.status(500).json({ success: false, error: 'Internal Server Error' });
+    }
 });
 
-//----- API Routes -----//
-app.get('/getQRCode', async (req, res) => {
+app.post('/getQRCode', async (req, res) => {
+    const clientIP = req.ip;
+    console.log('Client IP:', clientIP);
+
     try {
-        // Generate QR code image
-        const pngBuffer = await qrCode.toBuffer(qrCodeData, { type: 'png' });
+        if (ip_info.includes(clientIP)) {
+            const token = generateRandomToken(20);
+            console.log("Generated token:", token);
 
-        // Convert the image buffer to base64
-        const base64QRCodeImage = pngBuffer.toString('base64');
-
-        // Construct HTML with an embedded image
-        const htmlResponse = `
-        <html>
-        <body>
-        <img src="data:image/png;base64,${base64QRCodeImage}" alt="QR Code">
-        </body>
-        </html>`;
-
-        // Send the HTML response
-        res.send(htmlResponse);
-        // res.send(base64QRCodeImage);
-        console.log('Image Data:', base64QRCodeImage);
+            const base64QRCodeImage  = await sendQRCodeImage();
+            
+            res.status(200).json({ success: true, message: 'Base64 String QR Code have been sent!'});
+        } else {
+            console.log('IP not allowed to generate QR code');
+            res.status(403).json({ success: false, message: 'Access denied for generating QR Code!' });
+        }
     } catch (error) {
         console.error('Error generating QR code:', error);
         res.status(500).json({ success: false, error: 'Internal Server Error' });
@@ -399,11 +410,19 @@ app.get('/getQRCode', async (req, res) => {
 });
 
 app.post('/sendMessage', async (req, res) => {
+    const clientIP = req.ip;
+    console.log('Client IP:', clientIP);
+
     const { type, whos, message } = req.body;
 
     try {
-        await sendMessageWithType(type, whos, message);
-        res.status(200).json({ status: 'success', message: 'Message sent.' });
+        if (ip_info.includes(clientIP)) {
+            await sendMessageWithType(type, whos, message);
+            res.status(200).json({ status: 'success', message: 'Message sent!' });
+        } else {
+            console.log('Client IP not allowed to send message');
+            res.status(403).json({ status: 'success', message: 'Send message denied!' });
+        }
     } catch (error) {
         res.status(400).json({ status: 'error', message: error.message });
     }
