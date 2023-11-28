@@ -24,7 +24,7 @@ connectToWhatsApp();
 //----- Server Start -----//
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-    console.log(`Server is running on port ${PORT}`);
+    // console.log(`Server is running on port ${PORT}`);
 });
 
 //----- Functions -----//
@@ -45,7 +45,7 @@ async function sendMessageWithType(type, whos, message) {
         case 'text':
             if(message) {
                 await sock.sendMessage(whos, { text: message });
-                console.log('Text message sent to:', whos);
+                // console.log('Text message sent to:', whos);
             }
             break;
 
@@ -55,7 +55,7 @@ async function sendMessageWithType(type, whos, message) {
                 const caption = message.caption || '';
 
                 await sock.sendMessage(whos, { image: {url: imageUrl}, caption: caption, });
-                console.log('Image message sent to:', whos);
+                // console.log('Image message sent to:', whos);
             }
             break;
         
@@ -65,7 +65,7 @@ async function sendMessageWithType(type, whos, message) {
                 const caption = message.caption || '';
 
                 await sock.sendMessage(whos, { video: {url: videoUrl}, caption: caption, });
-                console.log('Video message sent to:', whos);
+                // console.log('Video message sent to:', whos);
             }
             break;
         
@@ -74,7 +74,7 @@ async function sendMessageWithType(type, whos, message) {
                 const audioUrl = message.audioUrl;
 
                 await sock.sendMessage(whos, { audio: {url: audioUrl}, mimetype: 'audio/mp4', });
-                console.log('Audio message sent to:', whos);
+                // console.log('Audio message sent to:', whos);
             }
             break;
         
@@ -84,7 +84,7 @@ async function sendMessageWithType(type, whos, message) {
                 const longitude = message.longitude;
 
                 await sock.sendMessage(whos, { location: {degreesLatitude: latitude, degreesLongitude: longitude}, });
-                console.log('Location message sent to:', whos);
+                // console.log('Location message sent to:', whos);
             }
             break;
 
@@ -102,7 +102,7 @@ async function sendMessageWithType(type, whos, message) {
                 const stickerUrl = message.stickerUrl;
 
                 await sock.sendMessage(whos, { sticker: {url: stickerUrl, }, });
-                console.log('Sticker sent to:', whos);
+                // console.log('Sticker sent to:', whos);
             }
             break;
 
@@ -252,7 +252,7 @@ async function sendMessageWithType(type, whos, message) {
                     document: { url: documentFilePath, filename: fileOfName, filecaption: fileCaption, mimeType: mimeType },
                     ...info
                 });
-                console.log('Document sent to:', whos);
+                // console.log('Document sent to:', whos);
             }
             break;
             
@@ -265,12 +265,12 @@ async function sendMessageWithType(type, whos, message) {
                                 + `TEL;type=CELL;type=VOICE;waid=${phoneNumber}:+${phoneNumber}\n` + `END:VCARD`;
 
                 await sock.sendMessage(whos, { contacts: {displayName: displayName, contacts: [{vcard}] }, });
-                console.log('Contact sent to:', whos);
+                // console.log('Contact sent to:', whos);
             }
             break;
 
         default:
-            console.error('Invalid message type');
+            // console.error('Invalid message type');
             throw new Error('Invalid message type');
     }
 }
@@ -307,8 +307,8 @@ async function connectToWhatsApp() {
                     });
 
                     // Log the response from the API
-                    console.log('API Response:', apiResponse.data);
-                    console.log('QR Code Base64 String:',base64QRCodeImage);
+                    // console.log('API Response:', apiResponse.data);
+                    // console.log('QR Code Base64 String:',base64QRCodeImage);
                 } catch (error) {
                     console.error('Error making API request:', error);
                 }
@@ -317,7 +317,7 @@ async function connectToWhatsApp() {
 
         if (connection == 'close') {
             const shouldReconnect = lastDisconnect?.error?.output?.statusCode != DisconnectReason.loggedOut;
-            console.log(`Connection closed due to ${lastDisconnect?.error}, reconnecting: ${shouldReconnect}`);
+            // console.log(`Connection closed due to ${lastDisconnect?.error}, reconnecting: ${shouldReconnect}`);
 
             if (shouldReconnect) {
                 connectToWhatsApp();
@@ -326,17 +326,17 @@ async function connectToWhatsApp() {
                 try {
                     fs.rmdirSync('auth_info_baileys', { recursive: true });
                     connectToWhatsApp();
-                    console.log('Authentication info folder deleted.');
+                    // console.log('Authentication info folder deleted.');
                 } catch (error) {
                     console.error('Error deleted authentication folder:', error);
                 }
             }
         } 
         else if (connection === 'open') {
-            console.log('Connection opened');
+            // console.log('Connection opened');
         
             sock.ev.on('messages.upsert', async (messageInfoUpsert) => {
-                console.log(JSON.stringify(messageInfoUpsert, undefined, 2));
+                // console.log(JSON.stringify(messageInfoUpsert, undefined, 2));
         
                 const messageText = messageInfoUpsert;
 
@@ -345,14 +345,14 @@ async function connectToWhatsApp() {
                     //fromJid: remoteJid
                     message: messageText
                 }).then(apiResponse => {
-                    console.log('API Response:', apiResponse.data);
+                    // console.log('API Response:', apiResponse.data);
                     // console.log('Data: ', messageText);
 
                     if (apiResponse.data.log == 'done'){
-                        console.log('Success send to API', apiResponse.data.log);
+                        // console.log('Success send to API', apiResponse.data.log);
                     }
                     else {
-                        console.log('Fail send to the API', apiResponse.data.log);
+                        // console.log('Fail send to the API', apiResponse.data.log);
                     }
                 }).catch(error => {
                     console.error('Error making API request:', error);
@@ -362,7 +362,7 @@ async function connectToWhatsApp() {
     });
 
     sock.ev.on('messages.update', (messageInfo) => {
-        console.log(messageInfo);
+        // console.log(messageInfo);
     });
 
     sock.ev.on('creds.update', saveCreds);
@@ -371,14 +371,14 @@ async function connectToWhatsApp() {
 //----- API Routes -----//
 app.get('/checkIP', (req, res) => {
     const clientIP = req.ip;
-    console.log('Client IP:', clientIP);
+    // console.log('Client IP:', clientIP);
 
     try {
         if(ip_info.includes(clientIP)) {
-            console.log('Matching IP Address found in ip_info array!');
+            // console.log('Matching IP Address found in ip_info array!');
             res.status(200).json({ success: true, message: 'IP Found success!' });
         } else {
-            console.log('No matching IP Address found in ip_info array!');
+            // console.log('No matching IP Address found in ip_info array!');
             res.status(403).json({ success: false, message: 'Invalid IP Address!' });
         }
     } catch (error) {
@@ -389,18 +389,18 @@ app.get('/checkIP', (req, res) => {
 
 app.post('/getQRCode', async (req, res) => {
     const clientIP = req.ip;
-    console.log('Client IP:', clientIP);
+    // console.log('Client IP:', clientIP);
 
     try {
         if (ip_info.includes(clientIP)) {
             const token = generateRandomToken(20);
-            console.log("Generated token:", token);
+            // console.log("Generated token:", token);
 
             const base64QRCodeImage  = await sendQRCodeImage();
             
             res.status(200).json({ success: true, message: 'Base64 String QR Code have been sent!'});
         } else {
-            console.log('IP not allowed to generate QR code');
+            // console.log('IP not allowed to generate QR code');
             res.status(403).json({ success: false, message: 'Access denied for generating QR Code!' });
         }
     } catch (error) {
@@ -411,7 +411,7 @@ app.post('/getQRCode', async (req, res) => {
 
 app.post('/sendMessage', async (req, res) => {
     const clientIP = req.ip;
-    console.log('Client IP:', clientIP);
+    // console.log('Client IP:', clientIP);
 
     const { type, whos, message } = req.body;
 
@@ -420,7 +420,7 @@ app.post('/sendMessage', async (req, res) => {
             await sendMessageWithType(type, whos, message);
             res.status(200).json({ status: 'success', message: 'Message sent!' });
         } else {
-            console.log('Client IP not allowed to send message');
+            // console.log('Client IP not allowed to send message');
             res.status(403).json({ status: 'success', message: 'Send message denied!' });
         }
     } catch (error) {
