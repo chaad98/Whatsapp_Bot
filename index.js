@@ -73,7 +73,7 @@ async function sendMessageWithType(type, whos, message) {
             if(message && message.audioUrl) {
                 const audioUrl = message.audioUrl;
 
-                await sock.sendMessage(whos, { audio: {url: audioUrl}, mimetype: 'audio/mp4', });
+                await sock.sendMessage(whos, { audio: {url: audioUrl}, mimetype: 'audio/mpeg', });
                 // console.log('Audio message sent to:', whos);
             }
             break;
@@ -85,7 +85,7 @@ async function sendMessageWithType(type, whos, message) {
                 const audioData = fs.readFileSync(audioFilePath);
 
                 await sock.sendMessage(whos, { audio: audioData, mimetype: 'audio/ogg; codecs=opus' })
-                console.log('Voice message:', audioData);
+                // console.log('Voice message:', audioData);
             }
             break;
         
