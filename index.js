@@ -16,7 +16,7 @@ app.use(bodyParser.json());
 //----- Global Variables -----//
 let qrCodeData = '';
 let sock;
-let ip_info = [];
+let ip_info = ['::ffff:127.0.0.1'];
 
 //----- Execute WhatsApp API -----//
 connectToWhatsApp();
@@ -75,6 +75,17 @@ async function sendMessageWithType(type, whos, message) {
 
                 await sock.sendMessage(whos, { audio: {url: audioUrl}, mimetype: 'audio/mp4', });
                 // console.log('Audio message sent to:', whos);
+            }
+            break;
+
+        case 'voice':
+            if(message && message.audioFilePath) {
+                const audioFilePath = message.audioFilePath;
+
+                const audioData = fs.readFileSync(audioFilePath);
+
+                await sock.sendMessage(whos, { audio: audioData, mimetype: 'audio/ogg; codecs=opus' })
+                console.log('Voice message:', audioData);
             }
             break;
         
@@ -379,7 +390,7 @@ app.get('/checkIP', (req, res) => {
             res.status(200).json({ success: true, message: 'IP Found success!' });
         } else {
             // console.log('No matching IP Address found in ip_info array!');
-            res.status(403).json({ success: false, message: 'Invalid IP Address!' });
+            res.status(403).json({ success: false, message: 'Invalid IP Address!', clientIP });
         }
     } catch (error) {
         console.error('Server error:', error);
